@@ -87,9 +87,14 @@ if mode == 'AllAvailable':
                 target_fileName = 'PL%02X_DAT.BIN' % chrID
                 print('[i]', target_fileName)
                 f_name_list = []
+                for f_name in os.listdir(directory + subFolder):
+                    if f_name.endswith(target_fileName):
+                        f_name_list.append(f_name)
                 for f_name in f_name_list:
                     curCRC32 = crc32_from_file(directory + subFolder + f_name)
                     curSet = (f_name, curCRC32)
+                    # print("[d]", directory + subFolder + f_name)
+                    # print(f_name, curCRC32)
                     if curSet not in crcList:
                         crcList.append(curSet)
                         print(subFolder + f_name, ': ', curCRC32)
