@@ -1,4 +1,4 @@
-from MvC2_PalExp import MvC2_Dictionary as MvC2D
+from Data import MvC2_Dictionary as MvC2D
 desired_palette_amount = 16
 dir = '.\\PLDATs\\setPaletteAmount\\'
 edit_palette_amount = True
