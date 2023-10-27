@@ -83,7 +83,7 @@ if mode == 'AllAvailable':
             crcList = []
             for sbFolder in get_immediate_subdirectories(directory):
                 subFolder = sbFolder + '\\'
-                # print("[d]", directory + subFolder)
+                print("[d]", directory + subFolder)
                 target_fileName = 'PL%02X_DAT.BIN' % chrID
                 print('[i]', target_fileName)
                 f_name_list = []
@@ -93,8 +93,6 @@ if mode == 'AllAvailable':
                 for f_name in f_name_list:
                     curCRC32 = crc32_from_file(directory + subFolder + f_name)
                     curSet = (f_name, curCRC32)
-                    # print("[d]", directory + subFolder + f_name)
-                    # print(f_name, curCRC32)
                     if curSet not in crcList:
                         crcList.append(curSet)
                         print(subFolder + f_name, ': ', curCRC32)
@@ -238,6 +236,9 @@ if mode == 'AllAvailable':
                                      4, 5, 6, 7,
                                      8, 9, 10, 11,
                                      12, 13, 14, 15]
+                        else:
+                            exit_script('Wrong palette amount logged for this PLDAT.')
+
                         # Calculate the width and height of the combined image
                         max_width = max(img.width for img in images)
                         max_height = max(img.height for img in images)
@@ -444,10 +445,12 @@ elif mode == 'SingleCharacter':
                     elif slotAmount == 16:
                         rows = 4
                         columns = 4
-                        order = [0,   1,  2,  3,
-                                 4,   5,  6,  7,
-                                 8,   9, 10, 11,
+                        order = [0, 1, 2, 3,
+                                 4, 5, 6, 7,
+                                 8, 9, 10, 11,
                                  12, 13, 14, 15]
+                    else:
+                        exit_script('Wrong palette amount logged for this PLDAT.')
 
                     # Calculate the width and height of the combined image
                     max_width = max(img.width for img in images)
