@@ -51,10 +51,11 @@ def process_mem_block(p_mem_block):
 
 
 directory = ".\\Mixes\\"
-mode = 'SingleCharacter'  # SingleCharacter, AllAvailable
+mode = 'AllAvailable'  # SingleCharacter, AllAvailable
 
-duplicates_once = False
+duplicates_once = True
 chrID = '0x2A'
+labeled_output = False
 rawDirectory = '.\\RAWs\\'
 previewDir = '.\\ExportedPreviews\\'
 os.makedirs(previewDir, exist_ok=True)
@@ -151,7 +152,7 @@ if mode == 'AllAvailable':
                             mem_block_crc32 = binascii.crc32(mem_block) & 0xFFFFFFFF
                             mem_block_crc32_str = '%08x' % mem_block_crc32
                             cur_block_set = (chrID, mem_block_crc32_str)
-                            if (cur_block_set not in crcList) or (not duplicates_once):
+                            if (cur_block_set not in crcList) or (not duplicates_once) or labeled_output:
                                 crcList.append(cur_block_set)
                                 print(cur_block_set)
                                 PL_file.seek(slot_start_loc, 0)
@@ -179,92 +180,96 @@ if mode == 'AllAvailable':
                                 img_pil.putpalette(palette, rawmode='RGB')
                                 img_pil.save(targetDir + newFilename, optimize=True, format="PNG",
                                              transparency=0)
-                                label_image_filename = ".\\Data\\Images\\%s.png" % labelImage_dict[slotNumber]
-                                label_image = Image.open(label_image_filename)
-                                main_image = Image.open(targetDir + newFilename)
 
-                                # Calculate the padding (in pixels) between the label and main image
-                                padding_x = 10  # Adjust the horizontal padding as needed
+                                if labeled_output:
+                                    label_image_filename = ".\\Data\\Images\\%s.png" % labelImage_dict[slotNumber]
+                                    label_image = Image.open(label_image_filename)
+                                    main_image = Image.open(targetDir + newFilename)
 
-                                # Calculate the height to match the main image and maintain aspect ratio
-                                new_height = main_image.height
-                                new_width = int(label_image.width * (new_height / label_image.height))
+                                    # Calculate the padding (in pixels) between the label and main image
+                                    padding_x = 10  # Adjust the horizontal padding as needed
 
-                                # Resize the label image while maintaining its aspect ratio
-                                label_image = label_image.resize((new_width, new_height), Image.LANCZOS)
+                                    # Calculate the height to match the main image and maintain aspect ratio
+                                    new_height = main_image.height
+                                    new_width = int(label_image.width * (new_height / label_image.height))
 
-                                # Calculate the size of the combined image
-                                combined_width = label_image.width + padding_x + main_image.width
-                                combined_height = max(label_image.height, main_image.height)
+                                    # Resize the label image while maintaining its aspect ratio
+                                    label_image = label_image.resize((new_width, new_height), Image.LANCZOS)
 
-                                # Create a new image with the calculated size
-                                combined_image = Image.new("RGBA", (combined_width, combined_height))
+                                    # Calculate the size of the combined image
+                                    combined_width = label_image.width + padding_x + main_image.width
+                                    combined_height = max(label_image.height, main_image.height)
 
-                                # Paste the label image on the left
-                                combined_image.paste(label_image, (0, 0))
+                                    # Create a new image with the calculated size
+                                    combined_image = Image.new("RGBA", (combined_width, combined_height))
 
-                                # Paste the main image on the right with padding
-                                combined_image.paste(main_image, (label_image.width + padding_x, 0))
+                                    # Paste the label image on the left
+                                    combined_image.paste(label_image, (0, 0))
 
-                                # Save or display the combined image
-                                strFmt = 'Parts_{0:s}_0x{1:02X}_{2:s}_Slot{3:02X}_{4:s}.png'
-                                newFilename = strFmt.format(sbFolder, chrID, chrName, slotNumber, slotName)
+                                    # Paste the main image on the right with padding
+                                    combined_image.paste(main_image, (label_image.width + padding_x, 0))
 
-                                combined_image.save(labelPartsDir + newFilename)
-                                img_temp = Image.open(labelPartsDir + newFilename)
-                                images.append(img_temp)
-                                # combined_image.show()
+                                    # Save or display the combined image
+                                    strFmt = 'Parts_{0:s}_0x{1:02X}_{2:s}_Slot{3:02X}_{4:s}.png'
+                                    newFilename = strFmt.format(sbFolder, chrID, chrName, slotNumber, slotName)
+
+                                    combined_image.save(labelPartsDir + newFilename)
+                                    img_temp = Image.open(labelPartsDir + newFilename)
+                                    images.append(img_temp)
+                                    # combined_image.show()
                             else:
                                 print('[!] Duplicate slot found:', mem_block_crc32_str)
                                 continue
-                        # Define the number of rows and columns
-                        rows = 4
-                        columns = 3
-                        order = []
-                        if slotAmount == 6:
-                            rows = 2
-                            columns = 3
-                            order = [0, 2, 4, 1, 3, 5]
-                        elif slotAmount == 12:
+
+                        if labeled_output:
+                            # Define the number of rows and columns
                             rows = 4
                             columns = 3
-                            order = [0, 2, 4, 1, 3, 5, 6, 8, 10, 7, 9, 11]
-                        elif slotAmount == 16:
-                            rows = 4
-                            columns = 4
-                            order = [0, 1, 2, 3,
-                                     4, 5, 6, 7,
-                                     8, 9, 10, 11,
-                                     12, 13, 14, 15]
-                        else:
-                            exit_script('Wrong palette amount logged for this PLDAT.')
+                            order = []
+                            if slotAmount == 6:
+                                rows = 2
+                                columns = 3
+                                order = [0, 2, 4, 1, 3, 5]
+                            elif slotAmount == 12:
+                                rows = 4
+                                columns = 3
+                                order = [0, 2, 4, 1, 3, 5, 6, 8, 10, 7, 9, 11]
+                            elif slotAmount == 16:
+                                rows = 4
+                                columns = 4
+                                order = [0, 1, 2, 3,
+                                         4, 5, 6, 7,
+                                         8, 9, 10, 11,
+                                         12, 13, 14, 15]
+                            else:
+                                exit_script('Wrong palette amount logged for this PLDAT.')
 
-                        # Calculate the width and height of the combined image
-                        max_width = max(img.width for img in images)
-                        max_height = max(img.height for img in images)
+                            # Calculate the width and height of the combined image
+                            max_width = max(img.width for img in images)
+                            max_height = max(img.height for img in images)
 
-                        # Calculate the dimensions of each cell
-                        cell_width = max_width
-                        cell_height = max_height
+                            # Calculate the dimensions of each cell
+                            cell_width = max_width
+                            cell_height = max_height
 
-                        # Create a new image with the calculated size
-                        combined_width = columns * cell_width
-                        combined_height = rows * cell_height
-                        combined_image = Image.new("RGBA", (combined_width, combined_height))
+                            # Create a new image with the calculated size
+                            combined_width = columns * cell_width
+                            combined_height = rows * cell_height
+                            combined_image = Image.new("RGBA", (combined_width, combined_height))
 
-                        # Paste each image into the combined image in the specified order
-                        for i, img_index in enumerate(order):
-                            img = images[img_index]
-                            row = i // columns
-                            col = i % columns
-                            x_offset = col * cell_width
-                            y_offset = row * cell_height
-                            combined_image.paste(img, (x_offset, y_offset))
+                            # Paste each image into the combined image in the specified order
+                            for i, img_index in enumerate(order):
+                                img = images[img_index]
+                                row = i // columns
+                                col = i % columns
+                                x_offset = col * cell_width
+                                y_offset = row * cell_height
+                                combined_image.paste(img, (x_offset, y_offset))
 
-                        # Save the final combined image
-                        strFmt = 'Combined_{0:s}_0x{1:02X}_{2:s}.png'
-                        newFilename = strFmt.format(sbFolder, chrID, chrName)
-                        combined_image.save(labelDir + newFilename)
+                            # Save the final combined image
+                            strFmt = 'Combined_{0:s}_0x{1:02X}_{2:s}.png'
+                            newFilename = strFmt.format(sbFolder, chrID, chrName)
+                            combined_image.save(labelDir + newFilename)
                     else:
                         print('[!] Duplicate found:', subFolder + f_name, ', ', curCRC32)
                         continue
@@ -364,7 +369,7 @@ elif mode == 'SingleCharacter':
                         mem_block_crc32 = binascii.crc32(mem_block) & 0xFFFFFFFF
                         mem_block_crc32_str = '%08x' % mem_block_crc32
                         cur_block_set = (chrID, mem_block_crc32_str)
-                        if (cur_block_set not in crcList) or (not duplicates_once):
+                        if (cur_block_set not in crcList) or (not duplicates_once) or labeled_output:
                             crcList.append(cur_block_set)
                             print(cur_block_set)
                             PL_file.seek(slot_start_loc, 0)
@@ -392,92 +397,94 @@ elif mode == 'SingleCharacter':
                             img_pil.putpalette(palette, rawmode='RGB')
                             img_pil.save(targetDir + newFilename, optimize=True, format="PNG",
                                          transparency=0)
-                            label_image_filename = ".\\Data\\Images\\%s.png" % labelImage_dict[slotNumber]
-                            label_image = Image.open(label_image_filename)
-                            main_image = Image.open(targetDir + newFilename)
+                            if labeled_output:
+                                label_image_filename = ".\\Data\\Images\\%s.png" % labelImage_dict[slotNumber]
+                                label_image = Image.open(label_image_filename)
+                                main_image = Image.open(targetDir + newFilename)
 
-                            # Calculate the padding (in pixels) between the label and main image
-                            padding_x = 10  # Adjust the horizontal padding as needed
+                                # Calculate the padding (in pixels) between the label and main image
+                                padding_x = 10  # Adjust the horizontal padding as needed
 
-                            # Calculate the height to match the main image and maintain aspect ratio
-                            new_height = main_image.height
-                            new_width = int(label_image.width * (new_height / label_image.height))
+                                # Calculate the height to match the main image and maintain aspect ratio
+                                new_height = main_image.height
+                                new_width = int(label_image.width * (new_height / label_image.height))
 
-                            # Resize the label image while maintaining its aspect ratio
-                            label_image = label_image.resize((new_width, new_height), Image.LANCZOS)
+                                # Resize the label image while maintaining its aspect ratio
+                                label_image = label_image.resize((new_width, new_height), Image.LANCZOS)
 
-                            # Calculate the size of the combined image
-                            combined_width = label_image.width + padding_x + main_image.width
-                            combined_height = max(label_image.height, main_image.height)
+                                # Calculate the size of the combined image
+                                combined_width = label_image.width + padding_x + main_image.width
+                                combined_height = max(label_image.height, main_image.height)
 
-                            # Create a new image with the calculated size
-                            combined_image = Image.new("RGBA", (combined_width, combined_height))
+                                # Create a new image with the calculated size
+                                combined_image = Image.new("RGBA", (combined_width, combined_height))
 
-                            # Paste the label image on the left
-                            combined_image.paste(label_image, (0, 0))
+                                # Paste the label image on the left
+                                combined_image.paste(label_image, (0, 0))
 
-                            # Paste the main image on the right with padding
-                            combined_image.paste(main_image, (label_image.width + padding_x, 0))
+                                # Paste the main image on the right with padding
+                                combined_image.paste(main_image, (label_image.width + padding_x, 0))
 
-                            # Save or display the combined image
-                            strFmt = 'Parts_{0:s}_0x{1:02X}_{2:s}_Slot{3:02X}_{4:s}.png'
-                            newFilename = strFmt.format(sbFolder, chrID, chrName, slotNumber, slotName)
+                                # Save or display the combined image
+                                strFmt = 'Parts_{0:s}_0x{1:02X}_{2:s}_Slot{3:02X}_{4:s}.png'
+                                newFilename = strFmt.format(sbFolder, chrID, chrName, slotNumber, slotName)
 
-                            combined_image.save(labelPartsDir + newFilename)
-                            img_temp = Image.open(labelPartsDir + newFilename)
-                            images.append(img_temp)
+                                combined_image.save(labelPartsDir + newFilename)
+                                img_temp = Image.open(labelPartsDir + newFilename)
+                                images.append(img_temp)
                             # combined_image.show()
                         else:
                             print('[!] Duplicate slot found:', mem_block_crc32_str)
                             continue
-                    # Define the number of rows and columns
-                    rows = 4
-                    columns = 3
-                    order = []
-                    if slotAmount == 6:
-                        rows = 2
-                        columns = 3
-                        order = [0, 2, 4, 1, 3, 5]
-                    elif slotAmount == 12:
+                    if labeled_output:
+                        # Define the number of rows and columns
                         rows = 4
                         columns = 3
-                        order = [0, 2, 4, 1, 3, 5, 6, 8, 10, 7, 9, 11]
-                    elif slotAmount == 16:
-                        rows = 4
-                        columns = 4
-                        order = [0, 1, 2, 3,
-                                 4, 5, 6, 7,
-                                 8, 9, 10, 11,
-                                 12, 13, 14, 15]
-                    else:
-                        exit_script('Wrong palette amount logged for this PLDAT.')
+                        order = []
+                        if slotAmount == 6:
+                            rows = 2
+                            columns = 3
+                            order = [0, 2, 4, 1, 3, 5]
+                        elif slotAmount == 12:
+                            rows = 4
+                            columns = 3
+                            order = [0, 2, 4, 1, 3, 5, 6, 8, 10, 7, 9, 11]
+                        elif slotAmount == 16:
+                            rows = 4
+                            columns = 4
+                            order = [0, 1, 2, 3,
+                                     4, 5, 6, 7,
+                                     8, 9, 10, 11,
+                                     12, 13, 14, 15]
+                        else:
+                            exit_script('Wrong palette amount logged for this PLDAT.')
 
-                    # Calculate the width and height of the combined image
-                    max_width = max(img.width for img in images)
-                    max_height = max(img.height for img in images)
+                        # Calculate the width and height of the combined image
+                        max_width = max(img.width for img in images)
+                        max_height = max(img.height for img in images)
 
-                    # Calculate the dimensions of each cell
-                    cell_width = max_width
-                    cell_height = max_height
+                        # Calculate the dimensions of each cell
+                        cell_width = max_width
+                        cell_height = max_height
 
-                    # Create a new image with the calculated size
-                    combined_width = columns * cell_width
-                    combined_height = rows * cell_height
-                    combined_image = Image.new("RGBA", (combined_width, combined_height))
+                        # Create a new image with the calculated size
+                        combined_width = columns * cell_width
+                        combined_height = rows * cell_height
+                        combined_image = Image.new("RGBA", (combined_width, combined_height))
 
-                    # Paste each image into the combined image in the specified order
-                    for i, img_index in enumerate(order):
-                        img = images[img_index]
-                        row = i // columns
-                        col = i % columns
-                        x_offset = col * cell_width
-                        y_offset = row * cell_height
-                        combined_image.paste(img, (x_offset, y_offset))
+                        # Paste each image into the combined image in the specified order
+                        for i, img_index in enumerate(order):
+                            img = images[img_index]
+                            row = i // columns
+                            col = i % columns
+                            x_offset = col * cell_width
+                            y_offset = row * cell_height
+                            combined_image.paste(img, (x_offset, y_offset))
 
-                    # Save the final combined image
-                    strFmt = 'Combined_{0:s}_0x{1:02X}_{2:s}.png'
-                    newFilename = strFmt.format(sbFolder, chrID, chrName)
-                    combined_image.save(labelDir + newFilename)
+                        # Save the final combined image
+                        strFmt = 'Combined_{0:s}_0x{1:02X}_{2:s}.png'
+                        newFilename = strFmt.format(sbFolder, chrID, chrName)
+                        combined_image.save(labelDir + newFilename)
                 else:
                     print('[!] Duplicate found:', subFolder + f_name, ', ', curCRC32)
                     continue
