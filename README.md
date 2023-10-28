@@ -6,11 +6,13 @@
 ## Example Using 'SingleCharacter'
 
  Line 54 has
+
  ```Py
     mode = 'SingleCharacter'  # SingleCharacter, AllAvailable
  ```  
 
   Line 57 has
+
 ```Py
     chrID = '0x2A'
 ```  
